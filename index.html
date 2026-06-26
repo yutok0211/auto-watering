@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>トマト水やり</title>
+  <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a4a2e 0%, #2d7a4f 50%, #1a4a2e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 20px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .tomato-icon {
+      font-size: 56px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+
+    /* 接続ステータス */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 28px;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #888;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .dot.connected    { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+    .dot.connecting   { background: #fbbf24; animation: pulse 1s infinite; }
+    .dot.disconnected { background: #f87171; }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    /* ポンプ状態 */
+    .pump-section {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .pump-status {
+      font-size: 15px;
+      opacity: 0.75;
+      margin-bottom: 20px;
+    }
+
+    .pump-btn {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .pump-btn.off {
+      background: radial-gradient(circle at 40% 35%, #5b9bd5, #2563eb);
+      box-shadow: 0 6px 30px rgba(37,99,235,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    .pump-btn.on {
+      background: radial-gradient(circle at 40% 35%, #60efff, #0891b2);
+      box-shadow: 0 6px 40px rgba(8,145,178,0.7), inset 0 1px 0 rgba(255,255,255,0.3);
+      animation: glow 1.5s ease-in-out infinite alternate;
+    }
+
+    .pump-btn:active {
+      transform: scale(0.94);
+    }
+
+    .pump-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 6px 30px rgba(8,145,178,0.6); }
+      to   { box-shadow: 0 6px 50px rgba(8,145,178,0.9), 0 0 60px rgba(96,239,255,0.3); }
+    }
+
+    .btn-icon  { font-size: 42px; display: block; margin-bottom: 6px; }
+    .btn-label { font-size: 16px; letter-spacing: 1px; }
+
+    /* 水やり履歴 */
+    .history-section { }
+
+    .history-title {
+      font-size: 13px;
+      opacity: 0.6;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item .time { opacity: 0.7; }
+    .history-item .action-on  { color: #60efff; font-weight: 600; }
+    .history-item .action-off { color: #a3e635; font-weight: 600; }
+
+    .no-history {
+      text-align: center;
+      opacity: 0.4;
+      font-size: 13px;
+      padding: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="tomato-icon">🍅</span>
+      <h1>トマト水やり</h1>
+      <h2>スマート灌水システム</h2>
+    </div>
+
+    <div class="status-bar">
+      <div class="dot connecting" id="dot"></div>
+      <span id="status-text">接続中...</span>
+    </div>
+
+    <div class="pump-section">
+      <p class="pump-status" id="pump-status">ポンプ状態: 取得中...</p>
+      <button class="pump-btn off" id="pump-btn" onclick="togglePump()" disabled>
+        <span class="btn-icon">💧</span>
+        <span class="btn-label" id="btn-label">タップ</span>
+      </button>
+    </div>
+
+    <div class="history-section">
+      <p class="history-title">操作履歴</p>
+      <ul class="history-list" id="history-list">
+        <li class="no-history">まだ操作がありません</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const BROKER   = 'wss://7c11a17ad37643f7a3572dccfdfae248.s1.eu.hivemq.cloud:8884/mqtt';
+    const USERNAME = 'YutoK';
+    const PASSWORD = 'Yut0ichigeki';
+    const TOPIC_CONTROL = 'tomato/pump/control';
+    const TOPIC_STATUS  = 'tomato/pump/status';
+
+    let isPumpOn = false;
+    let mqttClient;
+
+    const dot        = document.getElementById('dot');
+    const statusText = document.getElementById('status-text');
+    const pumpStatus = document.getElementById('pump-status');
+    const pumpBtn    = document.getElementById('pump-btn');
+    const btnLabel   = document.getElementById('btn-label');
+    const historyList = document.getElementById('history-list');
+
+    function setConnectionStatus(state) {
+      dot.className = 'dot ' + state;
+      if (state === 'connected')    statusText.textContent = '接続済み';
+      if (state === 'connecting')   statusText.textContent = '接続中...';
+      if (state === 'disconnected') statusText.textContent = '切断されました';
+    }
+
+    function updatePumpUI(on) {
+      isPumpOn = on;
+      pumpBtn.className = 'pump-btn ' + (on ? 'on' : 'off');
+      btnLabel.textContent = on ? 'ON' : 'OFF';
+      pumpStatus.textContent = 'ポンプ状態: ' + (on ? '動作中 💧' : '停止中');
+    }
+
+    function addHistory(action) {
+      const now = new Date();
+      const time = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const noHistory = historyList.querySelector('.no-history');
+      if (noHistory) noHistory.remove();
+
+      const li = document.createElement('li');
+      li.className = 'history-item';
+      li.innerHTML = `
+        <span class="time">${time}</span>
+        <span class="action-${action.toLowerCase()}">${action === 'ON' ? '▶ 開始' : '■ 停止'}</span>
+      `;
+      historyList.insertBefore(li, historyList.firstChild);
+
+      // 最大10件
+      while (historyList.children.length > 10) historyList.removeChild(historyList.lastChild);
+    }
+
+    function togglePump() {
+      if (!mqttClient || !mqttClient.connected) return;
+      const cmd = isPumpOn ? 'OFF' : 'ON';
+      mqttClient.publish(TOPIC_CONTROL, cmd);
+    }
+
+    function connect() {
+      setConnectionStatus('connecting');
+
+      mqttClient = mqtt.connect(BROKER, {
+        username: USERNAME,
+        password: PASSWORD,
+        clientId: 'WebApp-' + Math.random().toString(16).slice(2, 8),
+        reconnectPeriod: 3000,
+        connectTimeout: 10000,
+      });
+
+      mqttClient.on('connect', () => {
+        setConnectionStatus('connected');
+        pumpBtn.disabled = false;
+        mqttClient.subscribe(TOPIC_STATUS);
+      });
+
+      mqttClient.on('message', (topic, payload) => {
+        const msg = payload.toString();
+        if (topic === TOPIC_STATUS) {
+          const wasOn = isPumpOn;
+          updatePumpUI(msg === 'ON');
+          if (msg !== (wasOn ? 'ON' : 'OFF')) addHistory(msg);
+        }
+      });
+
+      mqttClient.on('disconnect', () => {
+        setConnectionStatus('disconnected');
+        pumpBtn.disabled = true;
+      });
+
+      mqttClient.on('error', (err) => {
+        console.error('MQTT error:', err);
+        setConnectionStatus('disconnected');
+      });
+    }
+
+    connect();
+  </script>
+</body>
+</html>
