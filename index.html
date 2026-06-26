@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>トマト水やり</title>
+  <title>自動水やり</title>
   <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1a4a2e 0%, #2d7a4f 50%, #1a4a2e 100%);
+      background: linear-gradient(135deg, #0f2a4a 0%, #1a5276 50%, #0f2a4a 100%);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -23,14 +23,14 @@
     }
 
     .card {
-      background: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.1);
       backdrop-filter: blur(20px);
       border-radius: 28px;
       padding: 36px 28px;
       width: 100%;
       max-width: 360px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
     }
 
     .header {
@@ -38,7 +38,7 @@
       margin-bottom: 32px;
     }
 
-    .tomato-icon {
+    .icon {
       font-size: 56px;
       display: block;
       margin-bottom: 8px;
@@ -53,16 +53,15 @@
     h2 {
       font-size: 13px;
       font-weight: 400;
-      opacity: 0.7;
+      opacity: 0.6;
       margin-top: 4px;
     }
 
-    /* 接続ステータス */
     .status-bar {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0,0,0,0.25);
       border-radius: 12px;
       padding: 10px 16px;
       margin-bottom: 28px;
@@ -87,7 +86,6 @@
       50%      { opacity: 0.3; }
     }
 
-    /* ポンプ状態 */
     .pump-section {
       text-align: center;
       margin-bottom: 32px;
@@ -115,13 +113,13 @@
     }
 
     .pump-btn.off {
-      background: radial-gradient(circle at 40% 35%, #5b9bd5, #2563eb);
-      box-shadow: 0 6px 30px rgba(37,99,235,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+      background: radial-gradient(circle at 40% 35%, #5b9bd5, #1a5276);
+      box-shadow: 0 6px 30px rgba(26,82,118,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
     }
 
     .pump-btn.on {
       background: radial-gradient(circle at 40% 35%, #60efff, #0891b2);
-      box-shadow: 0 6px 40px rgba(8,145,178,0.7), inset 0 1px 0 rgba(255,255,255,0.3);
+      box-shadow: 0 6px 40px rgba(8,145,178,0.8), inset 0 1px 0 rgba(255,255,255,0.3);
       animation: glow 1.5s ease-in-out infinite alternate;
     }
 
@@ -137,18 +135,17 @@
 
     @keyframes glow {
       from { box-shadow: 0 6px 30px rgba(8,145,178,0.6); }
-      to   { box-shadow: 0 6px 50px rgba(8,145,178,0.9), 0 0 60px rgba(96,239,255,0.3); }
+      to   { box-shadow: 0 6px 50px rgba(8,145,178,0.95), 0 0 60px rgba(96,239,255,0.35); }
     }
 
     .btn-icon  { font-size: 42px; display: block; margin-bottom: 6px; }
     .btn-label { font-size: 16px; letter-spacing: 1px; }
 
-    /* 水やり履歴 */
     .history-section { }
 
     .history-title {
       font-size: 13px;
-      opacity: 0.6;
+      opacity: 0.5;
       margin-bottom: 12px;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -173,13 +170,13 @@
       align-items: center;
     }
 
-    .history-item .time { opacity: 0.7; }
+    .history-item .time { opacity: 0.6; }
     .history-item .action-on  { color: #60efff; font-weight: 600; }
-    .history-item .action-off { color: #a3e635; font-weight: 600; }
+    .history-item .action-off { color: #86efac; font-weight: 600; }
 
     .no-history {
       text-align: center;
-      opacity: 0.4;
+      opacity: 0.35;
       font-size: 13px;
       padding: 12px;
     }
@@ -188,9 +185,9 @@
 <body>
   <div class="card">
     <div class="header">
-      <span class="tomato-icon">🍅</span>
-      <h1>トマト水やり</h1>
-      <h2>スマート灌水システム</h2>
+      <span class="icon">💧</span>
+      <h1>自動水やり</h1>
+      <h2>Auto Watering System</h2>
     </div>
 
     <div class="status-bar">
@@ -201,7 +198,7 @@
     <div class="pump-section">
       <p class="pump-status" id="pump-status">ポンプ状態: 取得中...</p>
       <button class="pump-btn off" id="pump-btn" onclick="togglePump()" disabled>
-        <span class="btn-icon">💧</span>
+        <span class="btn-icon">🚿</span>
         <span class="btn-label" id="btn-label">タップ</span>
       </button>
     </div>
@@ -258,8 +255,6 @@
         <span class="action-${action.toLowerCase()}">${action === 'ON' ? '▶ 開始' : '■ 停止'}</span>
       `;
       historyList.insertBefore(li, historyList.firstChild);
-
-      // 最大10件
       while (historyList.children.length > 10) historyList.removeChild(historyList.lastChild);
     }
 
