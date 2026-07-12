@@ -242,21 +242,48 @@
       pumpStatus.textContent = 'ポンプ状態: ' + (on ? '動作中 💧' : '停止中');
     }
 
+    const HISTORY_KEY = 'watering_history';
+    const MAX_HISTORY = 50;
+
+    function loadHistory() {
+      const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      if (saved.length === 0) return;
+      historyList.querySelector('.no-history')?.remove();
+      saved.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        li.innerHTML = `
+          <span class="time">${item.time}</span>
+          <span class="action-${item.action.toLowerCase()}">${item.action === 'ON' ? '▶ 開始' : '■ 停止'}</span>
+        `;
+        historyList.appendChild(li);
+      });
+    }
+
     function addHistory(action) {
       const now = new Date();
       const time = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const date = now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' });
       const noHistory = historyList.querySelector('.no-history');
       if (noHistory) noHistory.remove();
 
       const li = document.createElement('li');
       li.className = 'history-item';
       li.innerHTML = `
-        <span class="time">${time}</span>
+        <span class="time">${date} ${time}</span>
         <span class="action-${action.toLowerCase()}">${action === 'ON' ? '▶ 開始' : '■ 停止'}</span>
       `;
       historyList.insertBefore(li, historyList.firstChild);
-      while (historyList.children.length > 10) historyList.removeChild(historyList.lastChild);
+
+      const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      saved.unshift({ time: `${date} ${time}`, action });
+      if (saved.length > MAX_HISTORY) saved.length = MAX_HISTORY;
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+
+      while (historyList.children.length > MAX_HISTORY) historyList.removeChild(historyList.lastChild);
     }
+
+    loadHistory();
 
     function togglePump() {
       if (!mqttClient || !mqttClient.connected) return;
