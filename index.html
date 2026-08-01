@@ -17,7 +17,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       color: white;
       padding: 20px;
     }
@@ -26,36 +26,23 @@
       background: rgba(255,255,255,0.1);
       backdrop-filter: blur(20px);
       border-radius: 28px;
-      padding: 36px 28px;
+      padding: 28px 24px;
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.4);
       border: 1px solid rgba(255,255,255,0.15);
+      margin-bottom: 16px;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 20px;
     }
 
-    .icon {
-      font-size: 56px;
-      display: block;
-      margin-bottom: 8px;
-    }
+    .icon { font-size: 48px; display: block; margin-bottom: 6px; }
 
-    h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    h2 {
-      font-size: 13px;
-      font-weight: 400;
-      opacity: 0.6;
-      margin-top: 4px;
-    }
+    h1 { font-size: 20px; font-weight: 700; }
+    h2 { font-size: 12px; font-weight: 400; opacity: 0.6; margin-top: 3px; }
 
     .status-bar {
       display: flex;
@@ -64,122 +51,196 @@
       background: rgba(0,0,0,0.25);
       border-radius: 12px;
       padding: 10px 16px;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
       font-size: 13px;
     }
 
     .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #888;
-      flex-shrink: 0;
-      transition: background 0.3s;
+      width: 10px; height: 10px;
+      border-radius: 50%; background: #888;
+      flex-shrink: 0; transition: background 0.3s;
     }
-
     .dot.connected    { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
     .dot.connecting   { background: #fbbf24; animation: pulse 1s infinite; }
     .dot.disconnected { background: #f87171; }
 
-    @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.3; }
-    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .pump-section {
-      text-align: center;
-      margin-bottom: 32px;
-    }
+    /* ポンプボタン */
+    .pump-section { text-align: center; margin-bottom: 20px; }
 
-    .pump-status {
-      font-size: 15px;
-      opacity: 0.75;
-      margin-bottom: 20px;
-    }
+    .pump-status { font-size: 14px; opacity: 0.75; margin-bottom: 14px; }
 
     .pump-btn {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      font-size: 18px;
-      font-weight: 700;
-      color: white;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
+      width: 148px; height: 148px;
+      border-radius: 50%; border: none;
+      cursor: pointer; color: white;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      outline: none; -webkit-tap-highlight-color: transparent;
     }
-
     .pump-btn.off {
       background: radial-gradient(circle at 40% 35%, #5b9bd5, #1a5276);
       box-shadow: 0 6px 30px rgba(26,82,118,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
     }
-
     .pump-btn.on {
       background: radial-gradient(circle at 40% 35%, #60efff, #0891b2);
       box-shadow: 0 6px 40px rgba(8,145,178,0.8), inset 0 1px 0 rgba(255,255,255,0.3);
       animation: glow 1.5s ease-in-out infinite alternate;
     }
-
-    .pump-btn:active {
-      transform: scale(0.94);
-    }
-
-    .pump-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-    }
+    .pump-btn:active { transform: scale(0.94); }
+    .pump-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
     @keyframes glow {
       from { box-shadow: 0 6px 30px rgba(8,145,178,0.6); }
       to   { box-shadow: 0 6px 50px rgba(8,145,178,0.95), 0 0 60px rgba(96,239,255,0.35); }
     }
 
-    .btn-icon  { font-size: 42px; display: block; margin-bottom: 6px; }
-    .btn-label { font-size: 16px; letter-spacing: 1px; }
+    .btn-icon    { font-size: 38px; display: block; margin-bottom: 4px; }
+    .btn-label   { font-size: 15px; letter-spacing: 1px; font-weight: 700; }
+    .btn-timer   { font-size: 13px; margin-top: 3px; opacity: 0.9; letter-spacing: 0.5px; }
 
-    .history-section { }
-
-    .history-title {
-      font-size: 13px;
-      opacity: 0.5;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    /* タイマー設定 */
+    .section-title {
+      font-size: 11px; opacity: 0.5;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 10px;
     }
+
+    .timer-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-bottom: 16px;
+    }
+
+    .time-input-group {
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .time-input-group label { font-size: 12px; opacity: 0.6; }
+
+    .num-input {
+      width: 56px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      padding: 6px 4px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .num-input:focus { border-color: rgba(96,239,255,0.6); }
+
+    .timer-sep { font-size: 22px; font-weight: 700; opacity: 0.5; }
+
+    /* スケジュール */
+    .schedule-list {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .schedule-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px; padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    .schedule-item .s-time { font-weight: 700; font-size: 16px; }
+    .schedule-item .s-dur  { opacity: 0.6; font-size: 12px; margin-top: 2px; }
+    .schedule-item .s-left { display: flex; flex-direction: column; }
+
+    .schedule-toggle {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; padding: 4px;
+      transition: transform 0.2s;
+    }
+    .schedule-toggle:hover { transform: scale(1.2); }
+
+    .del-btn {
+      background: none; border: none; cursor: pointer;
+      color: #f87171; font-size: 18px; padding: 4px 6px;
+    }
+
+    .add-schedule-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+
+    .time-picker {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: white; font-size: 14px;
+      padding: 8px 10px; outline: none;
+    }
+    .time-picker:focus { border-color: rgba(96,239,255,0.6); }
+
+    .add-btn {
+      background: rgba(96,239,255,0.2);
+      border: 1px solid rgba(96,239,255,0.4);
+      border-radius: 10px; color: white;
+      font-size: 13px; font-weight: 600;
+      padding: 8px 14px; cursor: pointer;
+      white-space: nowrap;
+    }
+    .add-btn:hover { background: rgba(96,239,255,0.35); }
+
+    /* 通知 */
+    .notif-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,0,0,0.2); border-radius: 12px;
+      padding: 12px 16px; margin-bottom: 0;
+    }
+
+    .notif-label { font-size: 14px; }
+    .notif-sub   { font-size: 11px; opacity: 0.5; margin-top: 2px; }
+
+    .toggle-switch {
+      position: relative; width: 44px; height: 24px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.2);
+      border-radius: 24px; cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: white; border-radius: 50%;
+      transition: transform 0.3s;
+    }
+    input:checked + .toggle-slider { background: #4ade80; }
+    input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* 履歴 */
+    .history-title { font-size: 11px; opacity: 0.5; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.5px; }
 
     .history-list {
       list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 160px;
-      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 200px; overflow-y: auto;
     }
 
     .history-item {
       background: rgba(0,0,0,0.2);
-      border-radius: 10px;
-      padding: 10px 14px;
+      border-radius: 10px; padding: 9px 14px;
       font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
     }
 
     .history-item .time { opacity: 0.6; }
     .history-item .action-on  { color: #60efff; font-weight: 600; }
     .history-item .action-off { color: #86efac; font-weight: 600; }
-
-    .no-history {
-      text-align: center;
-      opacity: 0.35;
-      font-size: 13px;
-      padding: 12px;
+    .history-item .h-badge {
+      font-size: 10px; opacity: 0.5; margin-left: 4px;
     }
+
+    .no-history { text-align: center; opacity: 0.35; font-size: 13px; padding: 12px; }
   </style>
 </head>
 <body>
@@ -200,97 +261,298 @@
       <button class="pump-btn off" id="pump-btn" onclick="togglePump()" disabled>
         <span class="btn-icon">🚿</span>
         <span class="btn-label" id="btn-label">タップ</span>
+        <span class="btn-timer" id="btn-timer"></span>
       </button>
     </div>
 
-    <div class="history-section">
-      <p class="history-title">操作履歴</p>
-      <ul class="history-list" id="history-list">
-        <li class="no-history">まだ操作がありません</li>
-      </ul>
+    <!-- タイマー設定 -->
+    <p class="section-title">起動時間</p>
+    <div class="timer-row">
+      <div class="time-input-group">
+        <input class="num-input" type="number" id="dur-min" min="0" max="59" value="0">
+        <label>分</label>
+      </div>
+      <span class="timer-sep">:</span>
+      <div class="time-input-group">
+        <input class="num-input" type="number" id="dur-sec" min="0" max="59" value="30">
+        <label>秒</label>
+      </div>
     </div>
   </div>
 
+  <!-- スケジュール -->
+  <div class="card">
+    <p class="section-title">スケジュール実行</p>
+    <div class="schedule-list" id="schedule-list"></div>
+    <div class="add-schedule-row">
+      <input class="time-picker" type="time" id="schedule-time" value="07:00">
+      <button class="add-btn" onclick="addSchedule()">＋ 追加</button>
+    </div>
+  </div>
+
+  <!-- 通知 -->
+  <div class="card">
+    <div class="notif-row">
+      <div>
+        <div class="notif-label">🔔 通知</div>
+        <div class="notif-sub" id="notif-sub">ポンプON/OFFを通知</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="notif-toggle" onchange="toggleNotif()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 操作履歴 -->
+  <div class="card">
+    <p class="history-title">操作履歴</p>
+    <ul class="history-list" id="history-list">
+      <li class="no-history">まだ操作がありません</li>
+    </ul>
+  </div>
+
   <script>
-    const BROKER   = 'wss://7c11a17ad37643f7a3572dccfdfae248.s1.eu.hivemq.cloud:8884/mqtt';
-    const USERNAME = 'YutoK';
-    const PASSWORD = 'Yut0ichigeki';
+    const BROKER        = 'wss://7c11a17ad37643f7a3572dccfdfae248.s1.eu.hivemq.cloud:8884/mqtt';
+    const USERNAME      = 'YutoK';
+    const PASSWORD      = 'Yut0ichigeki';
     const TOPIC_CONTROL = 'tomato/pump/control';
     const TOPIC_STATUS  = 'tomato/pump/status';
 
-    let isPumpOn = false;
+    const HISTORY_KEY  = 'watering_history';
+    const SCHEDULE_KEY = 'watering_schedules';
+    const NOTIF_KEY    = 'watering_notif';
+    const MAX_HISTORY  = 50;
+
+    let isPumpOn        = false;
     let mqttClient;
+    let isInitialStatus = true;   // 再接続時の最初のretainedメッセージをスキップ
+    let countdownTimer  = null;
+    let countdownSec    = 0;
 
-    const dot        = document.getElementById('dot');
-    const statusText = document.getElementById('status-text');
-    const pumpStatus = document.getElementById('pump-status');
-    const pumpBtn    = document.getElementById('pump-btn');
-    const btnLabel   = document.getElementById('btn-label');
-    const historyList = document.getElementById('history-list');
+    const dot          = document.getElementById('dot');
+    const statusText   = document.getElementById('status-text');
+    const pumpStatus   = document.getElementById('pump-status');
+    const pumpBtn      = document.getElementById('pump-btn');
+    const btnLabel     = document.getElementById('btn-label');
+    const btnTimer     = document.getElementById('btn-timer');
+    const historyList  = document.getElementById('history-list');
+    const durMin       = document.getElementById('dur-min');
+    const durSec       = document.getElementById('dur-sec');
+    const notifToggle  = document.getElementById('notif-toggle');
+    const notifSub     = document.getElementById('notif-sub');
 
+    /* ── 接続状態 ── */
     function setConnectionStatus(state) {
       dot.className = 'dot ' + state;
-      if (state === 'connected')    statusText.textContent = '接続済み';
-      if (state === 'connecting')   statusText.textContent = '接続中...';
-      if (state === 'disconnected') statusText.textContent = '切断されました';
+      statusText.textContent = {connected:'接続済み', connecting:'接続中...', disconnected:'切断されました'}[state];
     }
 
+    /* ── ポンプUI ── */
     function updatePumpUI(on) {
       isPumpOn = on;
       pumpBtn.className = 'pump-btn ' + (on ? 'on' : 'off');
       btnLabel.textContent = on ? 'ON' : 'OFF';
       pumpStatus.textContent = 'ポンプ状態: ' + (on ? '動作中 💧' : '停止中');
+      if (!on) stopCountdown();
     }
 
-    const HISTORY_KEY = 'watering_history';
-    const MAX_HISTORY = 50;
+    /* ── カウントダウン ── */
+    function startCountdown(totalSec) {
+      stopCountdown();
+      countdownSec = totalSec;
+      renderCountdown();
+      countdownTimer = setInterval(() => {
+        countdownSec--;
+        if (countdownSec <= 0) {
+          stopCountdown();
+          sendCommand('OFF');
+        } else {
+          renderCountdown();
+        }
+      }, 1000);
+    }
 
+    function stopCountdown() {
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      btnTimer.textContent = '';
+    }
+
+    function renderCountdown() {
+      const m = Math.floor(countdownSec / 60);
+      const s = countdownSec % 60;
+      btnTimer.textContent = `残り ${m}:${String(s).padStart(2,'0')}`;
+    }
+
+    /* ── MQTT送信 ── */
+    function sendCommand(cmd) {
+      if (!mqttClient || !mqttClient.connected) return;
+      mqttClient.publish(TOPIC_CONTROL, cmd);
+    }
+
+    function togglePump() {
+      const cmd = isPumpOn ? 'OFF' : 'ON';
+      sendCommand(cmd);
+      // ONにするときタイマーが設定されていればカウントダウン開始
+      if (cmd === 'ON') {
+        const total = parseInt(durMin.value||0)*60 + parseInt(durSec.value||0);
+        if (total > 0) startCountdown(total);
+      } else {
+        stopCountdown();
+      }
+    }
+
+    /* ── 履歴 ── */
     function loadHistory() {
       const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-      if (saved.length === 0) return;
+      if (!saved.length) return;
       historyList.querySelector('.no-history')?.remove();
-      saved.forEach(item => {
-        const li = document.createElement('li');
-        li.className = 'history-item';
-        li.innerHTML = `
-          <span class="time">${item.time}</span>
-          <span class="action-${item.action.toLowerCase()}">${item.action === 'ON' ? '▶ 開始' : '■ 停止'}</span>
-        `;
-        historyList.appendChild(li);
-      });
+      saved.forEach(item => historyList.appendChild(makeHistoryEl(item)));
     }
 
-    function addHistory(action) {
-      const now = new Date();
-      const time = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const date = now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' });
-      const noHistory = historyList.querySelector('.no-history');
-      if (noHistory) noHistory.remove();
-
+    function makeHistoryEl({ time, action, auto }) {
       const li = document.createElement('li');
       li.className = 'history-item';
       li.innerHTML = `
-        <span class="time">${date} ${time}</span>
-        <span class="action-${action.toLowerCase()}">${action === 'ON' ? '▶ 開始' : '■ 停止'}</span>
-      `;
-      historyList.insertBefore(li, historyList.firstChild);
+        <span class="time">${time}</span>
+        <span class="action-${action.toLowerCase()}">${action==='ON'?'▶ 開始':'■ 停止'}${auto?'<span class="h-badge">自動</span>':''}</span>`;
+      return li;
+    }
+
+    function addHistory(action, auto = false) {
+      const now  = new Date();
+      const time = now.toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'})
+                 + ' ' + now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      historyList.querySelector('.no-history')?.remove();
+      historyList.insertBefore(makeHistoryEl({time,action,auto}), historyList.firstChild);
 
       const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-      saved.unshift({ time: `${date} ${time}`, action });
+      saved.unshift({time, action, auto});
       if (saved.length > MAX_HISTORY) saved.length = MAX_HISTORY;
       localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
 
       while (historyList.children.length > MAX_HISTORY) historyList.removeChild(historyList.lastChild);
     }
 
-    loadHistory();
+    /* ── スケジュール ── */
+    let schedules = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]');
 
-    function togglePump() {
-      if (!mqttClient || !mqttClient.connected) return;
-      const cmd = isPumpOn ? 'OFF' : 'ON';
-      mqttClient.publish(TOPIC_CONTROL, cmd);
+    function saveSchedules() {
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedules));
     }
 
+    function renderSchedules() {
+      const list = document.getElementById('schedule-list');
+      list.innerHTML = '';
+      if (!schedules.length) {
+        list.innerHTML = '<p style="opacity:0.35;font-size:13px;text-align:center;padding:8px">スケジュールなし</p>';
+        return;
+      }
+      schedules.forEach((s, i) => {
+        const total = s.min*60 + s.sec;
+        const durLabel = s.min > 0 ? `${s.min}分${s.sec}秒` : `${s.sec}秒`;
+        const div = document.createElement('div');
+        div.className = 'schedule-item';
+        div.innerHTML = `
+          <div class="s-left">
+            <span class="s-time">${s.time}</span>
+            <span class="s-dur">${durLabel} 起動</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="schedule-toggle" title="${s.enabled?'無効化':'有効化'}" onclick="toggleSchedule(${i})">${s.enabled?'✅':'⬜'}</button>
+            <button class="del-btn" onclick="deleteSchedule(${i})">🗑</button>
+          </div>`;
+        list.appendChild(div);
+      });
+    }
+
+    function addSchedule() {
+      const t = document.getElementById('schedule-time').value;
+      if (!t) return;
+      const min = parseInt(durMin.value || 0);
+      const sec = parseInt(durSec.value || 0);
+      if (min === 0 && sec === 0) { alert('起動時間を設定してください'); return; }
+      schedules.push({ time: t, min, sec, enabled: true });
+      schedules.sort((a,b) => a.time.localeCompare(b.time));
+      saveSchedules();
+      renderSchedules();
+    }
+
+    function deleteSchedule(i) {
+      schedules.splice(i, 1);
+      saveSchedules();
+      renderSchedules();
+    }
+
+    function toggleSchedule(i) {
+      schedules[i].enabled = !schedules[i].enabled;
+      saveSchedules();
+      renderSchedules();
+    }
+
+    // スケジュールチェック（1分ごと）
+    function checkSchedules() {
+      const now = new Date();
+      const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+      schedules.forEach(s => {
+        if (s.enabled && s.time === hhmm && !isPumpOn) {
+          sendCommand('ON');
+          const total = s.min*60 + s.sec;
+          if (total > 0) startCountdown(total);
+          addHistory('ON', true);
+          notify('🚿 自動水やり開始', `スケジュール ${s.time} に起動しました`);
+        }
+      });
+    }
+
+    // 毎分00秒にチェック
+    function scheduleLoop() {
+      const now = new Date();
+      const msToNextMin = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+      setTimeout(() => {
+        checkSchedules();
+        setInterval(checkSchedules, 60000);
+      }, msToNextMin);
+    }
+    scheduleLoop();
+
+    /* ── 通知 ── */
+    function toggleNotif() {
+      const on = notifToggle.checked;
+      if (on && Notification.permission === 'default') {
+        Notification.requestPermission().then(p => {
+          if (p !== 'granted') {
+            notifToggle.checked = false;
+            notifSub.textContent = '通知が許可されていません';
+            return;
+          }
+          localStorage.setItem(NOTIF_KEY, '1');
+          notifSub.textContent = '通知ON';
+        });
+      } else if (on) {
+        localStorage.setItem(NOTIF_KEY, '1');
+        notifSub.textContent = '通知ON';
+      } else {
+        localStorage.removeItem(NOTIF_KEY);
+        notifSub.textContent = 'ポンプON/OFFを通知';
+      }
+    }
+
+    function notify(title, body) {
+      if (!notifToggle.checked) return;
+      if (Notification.permission !== 'granted') return;
+      new Notification(title, { body, icon: '💧' });
+    }
+
+    function initNotif() {
+      const saved = localStorage.getItem(NOTIF_KEY);
+      if (saved && Notification.permission === 'granted') {
+        notifToggle.checked = true;
+        notifSub.textContent = '通知ON';
+      }
+    }
+
+    /* ── MQTT接続 ── */
     function connect() {
       setConnectionStatus('connecting');
 
@@ -305,15 +567,27 @@
       mqttClient.on('connect', () => {
         setConnectionStatus('connected');
         pumpBtn.disabled = false;
+        isInitialStatus = true;  // 再接続ごとにリセット
         mqttClient.subscribe(TOPIC_STATUS);
       });
 
       mqttClient.on('message', (topic, payload) => {
+        if (topic !== TOPIC_STATUS) return;
         const msg = payload.toString();
-        if (topic === TOPIC_STATUS) {
-          const wasOn = isPumpOn;
-          updatePumpUI(msg === 'ON');
-          if (msg !== (wasOn ? 'ON' : 'OFF')) addHistory(msg);
+        const wasOn = isPumpOn;
+        updatePumpUI(msg === 'ON');
+
+        // 初回retained messageはUIを同期するだけ、履歴・通知は出さない
+        if (isInitialStatus) {
+          isInitialStatus = false;
+          return;
+        }
+
+        // 実際に状態が変わったときだけ履歴と通知
+        if (msg !== (wasOn ? 'ON' : 'OFF')) {
+          addHistory(msg);
+          if (msg === 'ON') notify('🚿 水やり開始', 'ポンプが動作を開始しました');
+          if (msg === 'OFF') notify('✅ 水やり停止', 'ポンプが停止しました');
         }
       });
 
@@ -328,6 +602,10 @@
       });
     }
 
+    /* ── 初期化 ── */
+    loadHistory();
+    renderSchedules();
+    initNotif();
     connect();
   </script>
 </body>
