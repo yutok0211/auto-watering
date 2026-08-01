@@ -224,11 +224,26 @@
     const TOPIC_STATUS   = 'tomato/pump/status';
     const TOPIC_SCHEDULE = 'tomato/pump/schedule';
 
-    const HISTORY_KEY  = 'watering_history';
-    const SCHEDULE_KEY = 'watering_schedules';
-    const NOTIF_KEY    = 'watering_notif';
-    const TIMER_KEY    = 'watering_active_timer';
-    const MAX_HISTORY  = 50;
+    const HISTORY_KEY   = 'watering_history';
+    const SCHEDULE_KEY  = 'watering_schedules';
+    const NOTIF_KEY     = 'watering_notif';
+    const TIMER_KEY     = 'watering_active_timer';
+    const LAST_TS_KEY   = 'watering_last_status_ts';
+    const MAX_HISTORY   = 50;
+
+    // 通知アイコン（水滴絵文字をCanvasで画像化）
+    const NOTIF_ICON = (() => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = c.height = 96;
+        const ctx = c.getContext('2d');
+        ctx.font = '72px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💧', 48, 54);
+        return c.toDataURL();
+      } catch(e) { return ''; }
+    })();
 
     let isPumpOn        = false;
     let mqttClient;
@@ -443,6 +458,17 @@
       publishSchedules();
     }
 
+    /* ── ステータスメッセージのパース ──
+       形式: "ON:schedule:1722553200" / "OFF:timer:1722553200" / "ON" (旧形式)
+    ── */
+    function parseStatus(raw) {
+      const parts = raw.split(':');
+      if (parts.length >= 3) {
+        return { s: parts[0], r: parts[1], ts: parseInt(parts[2]) || 0 };
+      }
+      return { s: raw, r: 'manual', ts: 0 };
+    }
+
     /* ── 通知 ── */
     function toggleNotif() {
       const on = notifToggle.checked;
@@ -463,7 +489,13 @@
 
     function notify(title, body) {
       if (!notifToggle.checked || Notification.permission !== 'granted') return;
-      new Notification(title, { body, icon: '💧' });
+      new Notification(title, {
+        body,
+        icon:     NOTIF_ICON,
+        badge:    NOTIF_ICON,
+        tag:      'auto-watering',
+        renotify: true,
+      });
     }
 
     function initNotif() {
@@ -495,32 +527,49 @@
 
       mqttClient.on('message', (topic, payload) => {
         if (topic !== TOPIC_STATUS) return;
-        const msg = payload.toString();
+        const raw = payload.toString();
+        const { s, r, ts } = parseStatus(raw);
 
-        // 再接続直後のretained → UIのみ同期、カウントダウン復元
+        // 再接続直後のretained → 不在中の自動イベントを履歴に追加 + UI同期
         if (isInitialStatus) {
           isInitialStatus = false;
-          updatePumpUI(msg === 'ON');
-          if (msg === 'ON') restoreCountdownIfActive();
+          const lastTs = parseInt(localStorage.getItem(LAST_TS_KEY) || '0');
+
+          // タイムスタンプが新しく、かつ自動イベント（timer/schedule）なら履歴追加
+          if (ts > 0 && ts > lastTs && (r === 'timer' || r === 'schedule')) {
+            localStorage.setItem(LAST_TS_KEY, String(ts));
+            if (s === 'ON') {
+              addHistory('ON', true);
+              notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
+            } else {
+              addHistory('OFF', false, r === 'timer');
+              notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
+            }
+          }
+
+          updatePumpUI(s === 'ON');
+          if (s === 'ON') restoreCountdownIfActive();
           return;
         }
 
         // 自分が送ったコマンドのエコー → UI補正のみ
-        if (pendingCmd === msg) {
+        if (pendingCmd === s) {
           pendingCmd = null;
-          updatePumpUI(msg === 'ON');
+          updatePumpUI(s === 'ON');
+          if (ts > 0) localStorage.setItem(LAST_TS_KEY, String(ts));
           return;
         }
 
         // 外部変化（ESP32タイマー満了・スケジュール実行・別デバイス）
         const wasOn = isPumpOn;
-        if (msg !== (wasOn ? 'ON' : 'OFF')) {
-          updatePumpUI(msg === 'ON');
-          if (msg === 'ON') {
+        if (s !== (wasOn ? 'ON' : 'OFF')) {
+          updatePumpUI(s === 'ON');
+          if (ts > 0) localStorage.setItem(LAST_TS_KEY, String(ts));
+          if (s === 'ON') {
             addHistory('ON', true);
             notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
           } else {
-            const wasTimer = !!localStorage.getItem(TIMER_KEY);
+            const wasTimer = r === 'timer' || !!localStorage.getItem(TIMER_KEY);
             addHistory('OFF', false, wasTimer);
             notify('✅ 水やり停止', wasTimer ? 'タイマーにより停止しました' : 'ポンプが停止しました');
             stopCountdownDisplay();
