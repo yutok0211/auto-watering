@@ -487,15 +487,21 @@
       }
     }
 
+    let swReg = null;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(r => { swReg = r; })
+        .catch(e => console.warn('SW:', e));
+    }
+
     function notify(title, body) {
       if (!notifToggle.checked || Notification.permission !== 'granted') return;
-      new Notification(title, {
-        body,
-        icon:     NOTIF_ICON,
-        badge:    NOTIF_ICON,
-        tag:      'auto-watering',
-        renotify: true,
-      });
+      const opts = { body, icon: NOTIF_ICON, badge: NOTIF_ICON, tag: 'auto-watering', renotify: true };
+      if (swReg) {
+        swReg.showNotification(title, opts);
+      } else {
+        new Notification(title, opts);
+      }
     }
 
     function initNotif() {
