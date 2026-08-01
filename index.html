@@ -9,208 +9,122 @@
   <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #0f2a4a 0%, #1a5276 50%, #0f2a4a 100%);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      color: white;
-      padding: 20px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: flex-start; color: white; padding: 20px;
     }
-
     .card {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(20px);
-      border-radius: 28px;
-      padding: 28px 24px;
-      width: 100%;
-      max-width: 380px;
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(20px);
+      border-radius: 28px; padding: 28px 24px;
+      width: 100%; max-width: 380px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.15);
-      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.15); margin-bottom: 16px;
     }
-
     .header { text-align: center; margin-bottom: 20px; }
-    .icon { font-size: 48px; display: block; margin-bottom: 6px; }
+    .icon   { font-size: 48px; display: block; margin-bottom: 6px; }
     h1 { font-size: 20px; font-weight: 700; }
     h2 { font-size: 12px; font-weight: 400; opacity: 0.6; margin-top: 3px; }
 
     .status-bar {
       display: flex; align-items: center; gap: 8px;
-      background: rgba(0,0,0,0.25);
-      border-radius: 12px; padding: 10px 16px;
-      margin-bottom: 20px; font-size: 13px;
+      background: rgba(0,0,0,0.25); border-radius: 12px;
+      padding: 10px 16px; margin-bottom: 20px; font-size: 13px;
     }
-
-    .dot {
-      width: 10px; height: 10px;
-      border-radius: 50%; background: #888;
-      flex-shrink: 0; transition: background 0.3s;
-    }
-    .dot.connected    { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
-    .dot.connecting   { background: #fbbf24; animation: pulse 1s infinite; }
-    .dot.disconnected { background: #f87171; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#888; flex-shrink:0; transition:background 0.3s; }
+    .dot.connected    { background:#4ade80; box-shadow:0 0 8px #4ade80; }
+    .dot.connecting   { background:#fbbf24; animation:pulse 1s infinite; }
+    .dot.disconnected { background:#f87171; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    /* ポンプ */
     .pump-section { text-align: center; margin-bottom: 20px; }
-    .pump-status { font-size: 14px; opacity: 0.75; margin-bottom: 14px; }
-
+    .pump-status  { font-size: 14px; opacity: 0.75; margin-bottom: 14px; }
     .pump-btn {
-      width: 148px; height: 148px;
-      border-radius: 50%; border: none;
-      cursor: pointer; color: white;
-      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
-      outline: none; -webkit-tap-highlight-color: transparent;
+      width:148px; height:148px; border-radius:50%; border:none;
+      cursor:pointer; color:white;
+      transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      outline:none; -webkit-tap-highlight-color:transparent;
     }
-    .pump-btn.off {
-      background: radial-gradient(circle at 40% 35%, #5b9bd5, #1a5276);
-      box-shadow: 0 6px 30px rgba(26,82,118,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
-    }
-    .pump-btn.on {
-      background: radial-gradient(circle at 40% 35%, #60efff, #0891b2);
-      box-shadow: 0 6px 40px rgba(8,145,178,0.8), inset 0 1px 0 rgba(255,255,255,0.3);
-      animation: glow 1.5s ease-in-out infinite alternate;
-    }
-    .pump-btn:active { transform: scale(0.94); }
-    .pump-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .pump-btn.off { background:radial-gradient(circle at 40% 35%, #5b9bd5, #1a5276); box-shadow:0 6px 30px rgba(26,82,118,0.6), inset 0 1px 0 rgba(255,255,255,0.3); }
+    .pump-btn.on  { background:radial-gradient(circle at 40% 35%, #60efff, #0891b2); box-shadow:0 6px 40px rgba(8,145,178,0.8), inset 0 1px 0 rgba(255,255,255,0.3); animation:glow 1.5s ease-in-out infinite alternate; }
+    .pump-btn:active   { transform:scale(0.94); }
+    .pump-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
     @keyframes glow {
-      from { box-shadow: 0 6px 30px rgba(8,145,178,0.6); }
-      to   { box-shadow: 0 6px 50px rgba(8,145,178,0.95), 0 0 60px rgba(96,239,255,0.35); }
+      from { box-shadow:0 6px 30px rgba(8,145,178,0.6); }
+      to   { box-shadow:0 6px 50px rgba(8,145,178,0.95), 0 0 60px rgba(96,239,255,0.35); }
     }
-    .btn-icon  { font-size: 38px; display: block; margin-bottom: 4px; }
-    .btn-label { font-size: 15px; letter-spacing: 1px; font-weight: 700; }
-    .btn-timer { font-size: 13px; margin-top: 3px; opacity: 0.9; letter-spacing: 0.5px; }
+    .btn-icon  { font-size:38px; display:block; margin-bottom:4px; }
+    .btn-label { font-size:15px; letter-spacing:1px; font-weight:700; }
+    .btn-timer { font-size:13px; margin-top:3px; opacity:0.9; }
 
-    /* セクションタイトル */
-    .section-title {
-      font-size: 11px; opacity: 0.5;
-      text-transform: uppercase; letter-spacing: 1.5px;
-      margin-bottom: 10px;
-    }
+    .section-title { font-size:11px; opacity:0.5; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; }
 
-    /* 起動時間（分・秒）共通 */
-    .dur-row {
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px;
-    }
-    .dur-row.spaced { margin-bottom: 16px; }
-
-    .time-input-group { display: flex; align-items: center; gap: 4px; }
-    .time-input-group label { font-size: 12px; opacity: 0.6; }
-
+    .dur-row { display:flex; align-items:center; justify-content:center; gap:8px; }
+    .dur-row.spaced { margin-bottom:0; }
+    .time-input-group { display:flex; align-items:center; gap:4px; }
+    .time-input-group label { font-size:12px; opacity:0.6; }
     .num-input {
-      width: 52px;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 10px;
-      color: white; font-size: 20px; font-weight: 700;
-      text-align: center; padding: 6px 4px;
-      outline: none; -webkit-appearance: none;
+      width:52px; background:rgba(0,0,0,0.3);
+      border:1px solid rgba(255,255,255,0.2); border-radius:10px;
+      color:white; font-size:20px; font-weight:700; text-align:center;
+      padding:6px 4px; outline:none; -webkit-appearance:none;
     }
-    .num-input.sm {
-      width: 44px; font-size: 16px; padding: 5px 2px;
-    }
-    .num-input:focus { border-color: rgba(96,239,255,0.6); }
-    .timer-sep { font-size: 22px; font-weight: 700; opacity: 0.5; }
-    .timer-sep.sm { font-size: 16px; }
+    .num-input.sm { width:44px; font-size:16px; padding:5px 2px; }
+    .num-input:focus { border-color:rgba(96,239,255,0.6); }
+    .timer-sep    { font-size:22px; font-weight:700; opacity:0.5; }
+    .timer-sep.sm { font-size:16px; }
 
     /* スケジュール */
-    .schedule-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-
+    .schedule-list { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
     .schedule-item {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(0,0,0,0.2);
-      border-radius: 12px; padding: 10px 14px;
+      display:flex; align-items:center; justify-content:space-between;
+      background:rgba(0,0,0,0.2); border-radius:12px; padding:10px 14px;
     }
-    .schedule-item .s-time { font-weight: 700; font-size: 16px; }
-    .schedule-item .s-dur  { opacity: 0.6; font-size: 12px; margin-top: 2px; }
-    .schedule-item .s-left { display: flex; flex-direction: column; }
+    .schedule-item .s-time { font-weight:700; font-size:16px; }
+    .schedule-item .s-dur  { opacity:0.6; font-size:12px; margin-top:2px; }
+    .schedule-item .s-left { display:flex; flex-direction:column; }
+    .schedule-toggle { background:none; border:none; cursor:pointer; font-size:20px; padding:4px; transition:transform 0.2s; }
+    .schedule-toggle:hover { transform:scale(1.2); }
+    .del-btn { background:none; border:none; cursor:pointer; color:#f87171; font-size:18px; padding:4px 6px; }
 
-    .schedule-toggle {
-      background: none; border: none; cursor: pointer;
-      font-size: 20px; padding: 4px; transition: transform 0.2s;
-    }
-    .schedule-toggle:hover { transform: scale(1.2); }
-    .del-btn {
-      background: none; border: none; cursor: pointer;
-      color: #f87171; font-size: 18px; padding: 4px 6px;
-    }
-
-    /* スケジュール追加フォーム */
-    .add-form {
-      background: rgba(0,0,0,0.15);
-      border-radius: 14px; padding: 14px;
-    }
-    .add-form-row1 {
-      display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
-    }
-    .add-form-row2 {
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .add-form-label { font-size: 11px; opacity: 0.5; letter-spacing: 1px; margin-bottom: 6px; }
-
+    .add-form { background:rgba(0,0,0,0.15); border-radius:14px; padding:14px; }
+    .add-form-row1 { display:flex; gap:12px; align-items:flex-end; margin-bottom:10px; }
+    .add-form-label { font-size:11px; opacity:0.5; letter-spacing:1px; margin-bottom:6px; }
     .time-picker {
-      flex: 1;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 10px;
-      color: white; font-size: 16px; font-weight: 700;
-      padding: 7px 10px; outline: none;
+      background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2);
+      border-radius:10px; color:white; font-size:16px; font-weight:700;
+      padding:7px 10px; outline:none; width:110px;
     }
-    .time-picker:focus { border-color: rgba(96,239,255,0.6); }
-
+    .time-picker:focus { border-color:rgba(96,239,255,0.6); }
     .add-btn {
-      background: rgba(96,239,255,0.2);
-      border: 1px solid rgba(96,239,255,0.4);
-      border-radius: 10px; color: white;
-      font-size: 13px; font-weight: 600;
-      padding: 8px 16px; cursor: pointer; white-space: nowrap;
+      background:rgba(96,239,255,0.2); border:1px solid rgba(96,239,255,0.4);
+      border-radius:10px; color:white; font-size:13px; font-weight:600;
+      padding:8px 16px; cursor:pointer; white-space:nowrap; width:100%;
     }
-    .add-btn:hover { background: rgba(96,239,255,0.35); }
+    .add-btn:hover { background:rgba(96,239,255,0.35); }
 
     /* 通知 */
-    .notif-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px 16px;
-    }
-    .notif-label { font-size: 14px; }
-    .notif-sub   { font-size: 11px; opacity: 0.5; margin-top: 2px; }
-
-    .toggle-switch { position: relative; width: 44px; height: 24px; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider {
-      position: absolute; inset: 0;
-      background: rgba(255,255,255,0.2); border-radius: 24px; cursor: pointer;
-      transition: background 0.3s;
-    }
-    .toggle-slider::before {
-      content: ''; position: absolute;
-      width: 18px; height: 18px; left: 3px; top: 3px;
-      background: white; border-radius: 50%; transition: transform 0.3s;
-    }
-    input:checked + .toggle-slider { background: #4ade80; }
-    input:checked + .toggle-slider::before { transform: translateX(20px); }
+    .notif-row { display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.2); border-radius:12px; padding:12px 16px; }
+    .notif-label { font-size:14px; }
+    .notif-sub   { font-size:11px; opacity:0.5; margin-top:2px; }
+    .toggle-switch { position:relative; width:44px; height:24px; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; inset:0; background:rgba(255,255,255,0.2); border-radius:24px; cursor:pointer; transition:background 0.3s; }
+    .toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:white; border-radius:50%; transition:transform 0.3s; }
+    input:checked + .toggle-slider { background:#4ade80; }
+    input:checked + .toggle-slider::before { transform:translateX(20px); }
 
     /* 履歴 */
-    .history-title { font-size: 11px; opacity: 0.5; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.5px; }
-    .history-list {
-      list-style: none; display: flex; flex-direction: column; gap: 6px;
-      max-height: 200px; overflow-y: auto;
-    }
-    .history-item {
-      background: rgba(0,0,0,0.2); border-radius: 10px; padding: 9px 14px;
-      font-size: 13px; display: flex; justify-content: space-between; align-items: center;
-    }
-    .history-item .time    { opacity: 0.6; }
-    .history-item .action-on  { color: #60efff; font-weight: 600; }
-    .history-item .action-off { color: #86efac; font-weight: 600; }
-    .h-badge { font-size: 10px; opacity: 0.5; margin-left: 4px; }
-    .no-history { text-align: center; opacity: 0.35; font-size: 13px; padding: 12px; }
+    .history-title { font-size:11px; opacity:0.5; margin-bottom:10px; text-transform:uppercase; letter-spacing:1.5px; }
+    .history-list  { list-style:none; display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; }
+    .history-item  { background:rgba(0,0,0,0.2); border-radius:10px; padding:9px 14px; font-size:13px; display:flex; justify-content:space-between; align-items:center; }
+    .history-item .time   { opacity:0.6; }
+    .history-item .action-on  { color:#60efff; font-weight:600; }
+    .history-item .action-off { color:#86efac; font-weight:600; }
+    .h-badge { font-size:10px; opacity:0.5; margin-left:4px; }
+    .no-history { text-align:center; opacity:0.35; font-size:13px; padding:12px; }
   </style>
 </head>
 <body>
@@ -237,7 +151,6 @@
       </button>
     </div>
 
-    <!-- 手動起動時間 -->
     <p class="section-title">手動起動時間</p>
     <div class="dur-row spaced">
       <div class="time-input-group">
@@ -256,8 +169,6 @@
   <div class="card">
     <p class="section-title">スケジュール実行</p>
     <div class="schedule-list" id="schedule-list"></div>
-
-    <!-- 追加フォーム -->
     <div class="add-form">
       <div class="add-form-row1">
         <div>
@@ -279,7 +190,7 @@
           </div>
         </div>
       </div>
-      <button class="add-btn" style="width:100%" onclick="addSchedule()">＋ スケジュール追加</button>
+      <button class="add-btn" onclick="addSchedule()">＋ スケジュール追加</button>
     </div>
   </div>
 
@@ -306,26 +217,24 @@
   </div>
 
   <script>
-    const BROKER        = 'wss://7c11a17ad37643f7a3572dccfdfae248.s1.eu.hivemq.cloud:8884/mqtt';
-    const USERNAME      = 'YutoK';
-    const PASSWORD      = 'Yut0ichigeki';
-    const TOPIC_CONTROL = 'tomato/pump/control';
-    const TOPIC_STATUS  = 'tomato/pump/status';
+    const BROKER         = 'wss://7c11a17ad37643f7a3572dccfdfae248.s1.eu.hivemq.cloud:8884/mqtt';
+    const USERNAME       = 'YutoK';
+    const PASSWORD       = 'Yut0ichigeki';
+    const TOPIC_CONTROL  = 'tomato/pump/control';
+    const TOPIC_STATUS   = 'tomato/pump/status';
+    const TOPIC_SCHEDULE = 'tomato/pump/schedule';
 
     const HISTORY_KEY  = 'watering_history';
     const SCHEDULE_KEY = 'watering_schedules';
     const NOTIF_KEY    = 'watering_notif';
+    const TIMER_KEY    = 'watering_active_timer';
     const MAX_HISTORY  = 50;
 
     let isPumpOn        = false;
     let mqttClient;
     let isInitialStatus = true;
+    let pendingCmd      = null;
     let countdownTimer  = null;
-    let countdownSec    = 0;
-
-    // 手動操作フラグ: 自分が送ったコマンドのMQTTエコーを「外部変化」と誤認しないため
-    // sendCommand()が呼ばれた直後に設定し、エコー受信後にリセット
-    let pendingCmd = null;
 
     const dot         = document.getElementById('dot');
     const statusText  = document.getElementById('status-text');
@@ -343,45 +252,53 @@
       statusText.textContent = { connected:'接続済み', connecting:'接続中...', disconnected:'切断されました' }[state];
     }
 
-    /* ── ポンプUI（内部状態のみ更新、履歴は追加しない） ── */
+    /* ── ポンプUI ── */
     function updatePumpUI(on) {
       isPumpOn = on;
       pumpBtn.className = 'pump-btn ' + (on ? 'on' : 'off');
       btnLabel.textContent = on ? 'ON' : 'OFF';
       pumpStatus.textContent = 'ポンプ状態: ' + (on ? '動作中 💧' : '停止中');
-      if (!on) stopCountdown();
+      if (!on) stopCountdownDisplay();
     }
 
-    /* ── カウントダウン ── */
-    function startCountdown(totalSec) {
-      stopCountdown();
-      countdownSec = totalSec;
-      renderCountdown();
+    /* ── カウントダウン表示（表示のみ。実際のOFFはESP32が担当） ── */
+    function startCountdownDisplay(totalSec) {
+      stopCountdownDisplay();
+      let remaining = totalSec;
+      renderCountdown(remaining);
       countdownTimer = setInterval(() => {
-        countdownSec--;
-        if (countdownSec <= 0) {
-          stopCountdown();
-          // タイマー満了でOFF（UIは即時更新、MQTTエコーは無視）
-          updatePumpUI(false);
-          addHistory('OFF', false, true); // timer=true
-          notify('✅ 水やり停止', 'タイマーにより停止しました');
-          pendingCmd = 'OFF';
-          sendCommand('OFF');
+        remaining--;
+        if (remaining <= 0) {
+          stopCountdownDisplay();
         } else {
-          renderCountdown();
+          renderCountdown(remaining);
         }
       }, 1000);
     }
 
-    function stopCountdown() {
+    function stopCountdownDisplay() {
       if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
       btnTimer.textContent = '';
+      localStorage.removeItem(TIMER_KEY);
     }
 
-    function renderCountdown() {
-      const m = Math.floor(countdownSec / 60);
-      const s = countdownSec % 60;
+    function renderCountdown(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
       btnTimer.textContent = `残り ${m}:${String(s).padStart(2,'0')}`;
+    }
+
+    // ページを再度開いたとき、タイマーの残り時間を復元
+    function restoreCountdownIfActive() {
+      const stored = JSON.parse(localStorage.getItem(TIMER_KEY) || 'null');
+      if (!stored) return;
+      const elapsed   = Math.floor((Date.now() - stored.startMs) / 1000);
+      const remaining = stored.durationSec - elapsed;
+      if (remaining > 0 && isPumpOn) {
+        startCountdownDisplay(remaining);
+      } else {
+        localStorage.removeItem(TIMER_KEY);
+      }
     }
 
     /* ── MQTT送信 ── */
@@ -390,28 +307,37 @@
       mqttClient.publish(TOPIC_CONTROL, cmd);
     }
 
-    /* ── 手動トグル（即時UI反映・即時履歴） ── */
+    /* ── 手動トグル ── */
     function togglePump() {
       const cmd = isPumpOn ? 'OFF' : 'ON';
 
-      // 即時UIを更新（MQTTエコー待ちなし）
+      // 即時UIを更新
       updatePumpUI(cmd === 'ON');
 
       if (cmd === 'ON') {
-        const total = parseInt(document.getElementById('dur-min').value || 0) * 60
-                    + parseInt(document.getElementById('dur-sec').value || 0);
-        if (total > 0) startCountdown(total);
+        const min   = parseInt(document.getElementById('dur-min').value || 0);
+        const sec   = parseInt(document.getElementById('dur-sec').value || 0);
+        const total = min * 60 + sec;
+        if (total > 0) {
+          startCountdownDisplay(total);
+          // ページを離れても残り時間を復元できるよう保存
+          localStorage.setItem(TIMER_KEY, JSON.stringify({ startMs: Date.now(), durationSec: total }));
+          // ESP32にON+秒数を送る（ESP32がタイマーを持つ）
+          pendingCmd = 'ON';
+          sendCommand('ON:' + total);
+        } else {
+          pendingCmd = 'ON';
+          sendCommand('ON');
+        }
         addHistory('ON');
         notify('🚿 水やり開始', 'ポンプが動作を開始しました');
       } else {
-        stopCountdown();
+        stopCountdownDisplay();
+        pendingCmd = 'OFF';
+        sendCommand('OFF');
         addHistory('OFF');
         notify('✅ 水やり停止', 'ポンプが停止しました');
       }
-
-      // MQTTエコーが来ても履歴を二重追加しないようにフラグ
-      pendingCmd = cmd;
-      sendCommand(cmd);
     }
 
     /* ── 履歴 ── */
@@ -425,21 +351,20 @@
     function makeHistoryEl({ time, action, auto, timer }) {
       const li = document.createElement('li');
       li.className = 'history-item';
-      const badge = auto   ? '<span class="h-badge">自動</span>'
-                  : timer  ? '<span class="h-badge">タイマー</span>'
+      const badge = auto  ? '<span class="h-badge">自動</span>'
+                  : timer ? '<span class="h-badge">タイマー</span>'
                   : '';
-      li.innerHTML = `
-        <span class="time">${time}</span>
+      li.innerHTML = `<span class="time">${time}</span>
         <span class="action-${action.toLowerCase()}">${action==='ON'?'▶ 開始':'■ 停止'}${badge}</span>`;
       return li;
     }
 
     function addHistory(action, auto = false, timer = false) {
       const now  = new Date();
-      const time = now.toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'})
-                 + ' ' + now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const time = now.toLocaleDateString('ja-JP', { month:'2-digit', day:'2-digit' })
+                 + ' ' + now.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
       historyList.querySelector('.no-history')?.remove();
-      historyList.insertBefore(makeHistoryEl({time, action, auto, timer}), historyList.firstChild);
+      historyList.insertBefore(makeHistoryEl({ time, action, auto, timer }), historyList.firstChild);
 
       const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
       saved.unshift({ time, action, auto, timer });
@@ -449,10 +374,26 @@
       while (historyList.children.length > MAX_HISTORY) historyList.removeChild(historyList.lastChild);
     }
 
-    /* ── スケジュール ── */
+    /* ── スケジュール ──
+       スケジュールはWebアプリのlocalStorage + MQTTブローカー(retain)で管理。
+       ESP32がMQTTブローカーからスケジュールを受け取り、実際の実行はESP32が担当。
+    ── */
     let schedules = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]');
 
-    function saveSchedules() { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedules)); }
+    // スケジュール → MQTT publish（ESP32とブローカーに保存）
+    function publishSchedules() {
+      if (!mqttClient || !mqttClient.connected) return;
+      // フォーマット: "HH:MM:秒数:有効|..."
+      const str = schedules
+        .map(s => `${s.time}:${s.min * 60 + s.sec}:${s.enabled ? 1 : 0}`)
+        .join('|');
+      mqttClient.publish(TOPIC_SCHEDULE, str, { retain: true });
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedules));
+    }
+
+    function saveSchedulesLocal() {
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedules));
+    }
 
     function renderSchedules() {
       const list = document.getElementById('schedule-list');
@@ -486,35 +427,21 @@
       if (min === 0 && sec === 0) { alert('起動時間を設定してください'); return; }
       schedules.push({ time: t, min, sec, enabled: true });
       schedules.sort((a, b) => a.time.localeCompare(b.time));
-      saveSchedules();
       renderSchedules();
+      publishSchedules();
     }
 
-    function deleteSchedule(i)  { schedules.splice(i, 1); saveSchedules(); renderSchedules(); }
-    function toggleSchedule(i)  { schedules[i].enabled = !schedules[i].enabled; saveSchedules(); renderSchedules(); }
-
-    function checkSchedules() {
-      const now  = new Date();
-      const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-      schedules.forEach(s => {
-        if (!s.enabled || s.time !== hhmm || isPumpOn) return;
-        // 即時UIを更新
-        updatePumpUI(true);
-        const total = s.min * 60 + s.sec;
-        if (total > 0) startCountdown(total);
-        addHistory('ON', true);
-        notify('🚿 自動水やり開始', `スケジュール ${s.time} に起動しました`);
-        pendingCmd = 'ON';
-        sendCommand('ON');
-      });
+    function deleteSchedule(i) {
+      schedules.splice(i, 1);
+      renderSchedules();
+      publishSchedules();
     }
 
-    function scheduleLoop() {
-      const now = new Date();
-      const msToNextMin = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
-      setTimeout(() => { checkSchedules(); setInterval(checkSchedules, 60000); }, msToNextMin);
+    function toggleSchedule(i) {
+      schedules[i].enabled = !schedules[i].enabled;
+      renderSchedules();
+      publishSchedules();
     }
-    scheduleLoop();
 
     /* ── 通知 ── */
     function toggleNotif() {
@@ -562,38 +489,47 @@
         pumpBtn.disabled = false;
         isInitialStatus = true;
         mqttClient.subscribe(TOPIC_STATUS);
+        // スケジュールをESP32に送信（接続のたびに同期）
+        setTimeout(() => publishSchedules(), 500);
       });
 
       mqttClient.on('message', (topic, payload) => {
         if (topic !== TOPIC_STATUS) return;
         const msg = payload.toString();
 
-        // 再接続直後の retained メッセージ → UI同期のみ、履歴なし
+        // 再接続直後のretained → UIのみ同期、カウントダウン復元
         if (isInitialStatus) {
           isInitialStatus = false;
           updatePumpUI(msg === 'ON');
+          if (msg === 'ON') restoreCountdownIfActive();
           return;
         }
 
-        // 自分が送ったコマンドのエコー → UI補正のみ、履歴は既に追加済み
+        // 自分が送ったコマンドのエコー → UI補正のみ
         if (pendingCmd === msg) {
           pendingCmd = null;
           updatePumpUI(msg === 'ON');
           return;
         }
 
-        // 外部からの状態変化（別デバイスなど）→ 履歴・通知を追加
+        // 外部変化（ESP32タイマー満了・スケジュール実行・別デバイス）
         const wasOn = isPumpOn;
         if (msg !== (wasOn ? 'ON' : 'OFF')) {
           updatePumpUI(msg === 'ON');
-          addHistory(msg);
-          if (msg === 'ON') notify('🚿 水やり開始（外部）', 'ポンプが起動しました');
-          if (msg === 'OFF') notify('✅ 水やり停止（外部）', 'ポンプが停止しました');
+          if (msg === 'ON') {
+            addHistory('ON', true);
+            notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
+          } else {
+            const wasTimer = !!localStorage.getItem(TIMER_KEY);
+            addHistory('OFF', false, wasTimer);
+            notify('✅ 水やり停止', wasTimer ? 'タイマーにより停止しました' : 'ポンプが停止しました');
+            stopCountdownDisplay();
+          }
         }
       });
 
       mqttClient.on('disconnect', () => { setConnectionStatus('disconnected'); pumpBtn.disabled = true; });
-      mqttClient.on('error', (err) => { console.error(err); setConnectionStatus('disconnected'); });
+      mqttClient.on('error', err => { console.error(err); setConnectionStatus('disconnected'); });
     }
 
     /* ── 初期化 ── */
