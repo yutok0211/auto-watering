@@ -223,6 +223,7 @@
     const TOPIC_CONTROL  = 'tomato/pump/control';
     const TOPIC_STATUS   = 'tomato/pump/status';
     const TOPIC_SCHEDULE = 'tomato/pump/schedule';
+    const TOPIC_EVENTLOG = 'tomato/pump/eventlog';
 
     const HISTORY_KEY   = 'watering_history';
     const SCHEDULE_KEY  = 'watering_schedules';
@@ -458,6 +459,43 @@
       publishSchedules();
     }
 
+    /* ── イベントログ処理 ──
+       ESP32が"ON:schedule:1722553200|OFF:timer:1722553230|..."形式でpublish。
+       lastTs以降の自動イベント（timer/schedule）のみ履歴に追加。
+       manual操作はtogglePump()で既に追加済みなのでスキップ。
+    ── */
+    function processEventLog(raw) {
+      if (!raw) return;
+      const lastTs = parseInt(localStorage.getItem(LAST_TS_KEY) || '0');
+      let newLastTs = lastTs;
+      const entries = raw.split('|');
+
+      entries.forEach(entry => {
+        const parts = entry.split(':');
+        if (parts.length < 3) return;
+        const s  = parts[0];           // "ON" or "OFF"
+        const r  = parts[1];           // "schedule" / "timer" / "manual"
+        const ts = parseInt(parts[2]) || 0;
+
+        if (ts <= lastTs) return;      // 既に処理済み
+        if (r === 'manual') return;    // 手動操作はtogglePump()で追加済み
+
+        if (s === 'ON') {
+          addHistory('ON', true);
+          notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
+        } else {
+          addHistory('OFF', false, r === 'timer');
+          notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
+        }
+
+        if (ts > newLastTs) newLastTs = ts;
+      });
+
+      if (newLastTs > lastTs) {
+        localStorage.setItem(LAST_TS_KEY, String(newLastTs));
+      }
+    }
+
     /* ── ステータスメッセージのパース ──
        形式: "ON:schedule:1722553200" / "OFF:timer:1722553200" / "ON" (旧形式)
     ── */
@@ -496,7 +534,8 @@
 
     function notify(title, body) {
       if (!notifToggle.checked || Notification.permission !== 'granted') return;
-      const opts = { body, icon: NOTIF_ICON, badge: NOTIF_ICON, tag: 'auto-watering', renotify: true };
+      // tagを付けないことで通知が上書きされず全て積み上がる
+      const opts = { body, icon: NOTIF_ICON, badge: NOTIF_ICON };
       if (swReg) {
         swReg.showNotification(title, opts);
       } else {
@@ -527,32 +566,25 @@
         pumpBtn.disabled = false;
         isInitialStatus = true;
         mqttClient.subscribe(TOPIC_STATUS);
-        // スケジュールをESP32に送信（接続のたびに同期）
+        mqttClient.subscribe(TOPIC_EVENTLOG);
         setTimeout(() => publishSchedules(), 500);
       });
 
       mqttClient.on('message', (topic, payload) => {
-        if (topic !== TOPIC_STATUS) return;
         const raw = payload.toString();
+
+        // ── イベントログ処理（不在中の全イベントを履歴に反映） ──
+        if (topic === TOPIC_EVENTLOG) {
+          processEventLog(raw);
+          return;
+        }
+
+        if (topic !== TOPIC_STATUS) return;
         const { s, r, ts } = parseStatus(raw);
 
-        // 再接続直後のretained → 不在中の自動イベントを履歴に追加 + UI同期
+        // 再接続直後のretained → UIだけ同期（履歴はeventlogで処理）
         if (isInitialStatus) {
           isInitialStatus = false;
-          const lastTs = parseInt(localStorage.getItem(LAST_TS_KEY) || '0');
-
-          // タイムスタンプが新しく、かつ自動イベント（timer/schedule）なら履歴追加
-          if (ts > 0 && ts > lastTs && (r === 'timer' || r === 'schedule')) {
-            localStorage.setItem(LAST_TS_KEY, String(ts));
-            if (s === 'ON') {
-              addHistory('ON', true);
-              notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
-            } else {
-              addHistory('OFF', false, r === 'timer');
-              notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
-            }
-          }
-
           updatePumpUI(s === 'ON');
           if (s === 'ON') restoreCountdownIfActive();
           return;
@@ -566,19 +598,23 @@
           return;
         }
 
-        // 外部変化（ESP32タイマー満了・スケジュール実行・別デバイス）
+        // リアルタイムの外部変化（ESP32タイマー満了・スケジュール実行・別デバイス）
         const wasOn = isPumpOn;
         if (s !== (wasOn ? 'ON' : 'OFF')) {
           updatePumpUI(s === 'ON');
-          if (ts > 0) localStorage.setItem(LAST_TS_KEY, String(ts));
-          if (s === 'ON') {
-            addHistory('ON', true);
-            notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
-          } else {
-            const wasTimer = r === 'timer' || !!localStorage.getItem(TIMER_KEY);
-            addHistory('OFF', false, wasTimer);
-            notify('✅ 水やり停止', wasTimer ? 'タイマーにより停止しました' : 'ポンプが停止しました');
-            stopCountdownDisplay();
+          if (s === 'OFF') stopCountdownDisplay();
+
+          // timer/schedule はeventlogでも届くのでどちらか先着の方だけ記録（lastTsで重複排除）
+          const lastTs2 = parseInt(localStorage.getItem(LAST_TS_KEY) || '0');
+          if (r === 'manual' || (ts > 0 && ts > lastTs2)) {
+            if (ts > 0) localStorage.setItem(LAST_TS_KEY, String(ts));
+            if (s === 'ON') {
+              addHistory('ON', r === 'schedule');
+              if (r !== 'manual') notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
+            } else {
+              addHistory('OFF', false, r === 'timer');
+              if (r !== 'manual') notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
+            }
           }
         }
       });
