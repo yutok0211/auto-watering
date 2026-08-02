@@ -459,6 +459,22 @@
       publishSchedules();
     }
 
+    /* ── MQTTスケジュール文字列 → ローカル形式に変換 ──
+       ESP32/Webから送られる "HH:MM:totalSec:enabled|..." を {time, min, sec, enabled} に変換。
+       ローカルのschedules配列が空のときだけ使い、ブローカーのretainedから復元する。
+    ── */
+    function restoreSchedulesFromMQTT(raw) {
+      if (!raw) return [];
+      return raw.split('|').map(entry => {
+        const parts = entry.split(':');
+        if (parts.length < 4) return null;
+        const time     = `${parts[0]}:${parts[1]}`;
+        const totalSec = parseInt(parts[2]) || 0;
+        const enabled  = parts[3] === '1';
+        return { time, min: Math.floor(totalSec / 60), sec: totalSec % 60, enabled };
+      }).filter(Boolean);
+    }
+
     /* ── イベントログ処理 ──
        ESP32が"ON:schedule:1722553200|OFF:timer:1722553230|..."形式でpublish。
        lastTs以降の自動イベント（timer/schedule）のみ履歴に追加。
@@ -567,7 +583,11 @@
         isInitialStatus = true;
         mqttClient.subscribe(TOPIC_STATUS);
         mqttClient.subscribe(TOPIC_EVENTLOG);
-        setTimeout(() => publishSchedules(), 500);
+        mqttClient.subscribe(TOPIC_SCHEDULE);  // retained からスケジュールを復元
+        // schedules が空でない場合のみ publish（空を publish するとESP32のスケジュールが消えるのを防ぐ）
+        if (schedules.length > 0) {
+          setTimeout(() => publishSchedules(), 500);
+        }
       });
 
       mqttClient.on('message', (topic, payload) => {
@@ -576,6 +596,19 @@
         // ── イベントログ処理（不在中の全イベントを履歴に反映） ──
         if (topic === TOPIC_EVENTLOG) {
           processEventLog(raw);
+          return;
+        }
+
+        // ── スケジュール復元（ローカルが空のときブローカーの retained から復元） ──
+        if (topic === TOPIC_SCHEDULE) {
+          if (schedules.length === 0 && raw.length > 0) {
+            const restored = restoreSchedulesFromMQTT(raw);
+            if (restored.length > 0) {
+              schedules = restored;
+              renderSchedules();
+              saveSchedulesLocal();
+            }
+          }
           return;
         }
 
