@@ -162,18 +162,18 @@
       <div class="add-form-row1">
         <div>
           <p class="add-form-label">実行時刻</p>
-          <input class="time-picker" type="time" id="schedule-time" value="07:00">
+          <input class="time-picker" type="time" id="schedule-time" value="07:00" oninput="saveAddForm()">
         </div>
         <div>
           <p class="add-form-label">起動時間</p>
           <div class="dur-row">
             <div class="time-input-group">
-              <input class="num-input sm" type="number" id="s-dur-min" min="0" max="59" value="0">
+              <input class="num-input sm" type="number" id="s-dur-min" min="0" max="59" value="0" oninput="saveAddForm()">
               <label>分</label>
             </div>
             <span class="timer-sep sm">:</span>
             <div class="time-input-group">
-              <input class="num-input sm" type="number" id="s-dur-sec" min="0" max="59" value="30">
+              <input class="num-input sm" type="number" id="s-dur-sec" min="0" max="59" value="30" oninput="saveAddForm()">
               <label>秒</label>
             </div>
           </div>
@@ -391,6 +391,23 @@
       });
     }
 
+    const ADD_FORM_KEY = 'watering_add_form';
+
+    function saveAddForm() {
+      const t   = document.getElementById('schedule-time').value;
+      const min = document.getElementById('s-dur-min').value;
+      const sec = document.getElementById('s-dur-sec').value;
+      localStorage.setItem(ADD_FORM_KEY, JSON.stringify({ t, min, sec }));
+    }
+
+    function restoreAddForm() {
+      const saved = JSON.parse(localStorage.getItem(ADD_FORM_KEY) || 'null');
+      if (!saved) return;
+      if (saved.t)   document.getElementById('schedule-time').value = saved.t;
+      if (saved.min !== undefined) document.getElementById('s-dur-min').value = saved.min;
+      if (saved.sec !== undefined) document.getElementById('s-dur-sec').value = saved.sec;
+    }
+
     function addSchedule() {
       const t   = document.getElementById('schedule-time').value;
       const min = parseInt(document.getElementById('s-dur-min').value || 0);
@@ -568,6 +585,7 @@
     /* ── 初期化 ── */
     loadHistory();
     renderSchedules();
+    restoreAddForm();
     connect();
   </script>
 </body>
