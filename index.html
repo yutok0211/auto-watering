@@ -375,10 +375,10 @@
       return li;
     }
 
-    function addHistory(action, auto = false, timer = false) {
-      const now  = new Date();
-      const time = now.toLocaleDateString('ja-JP', { month:'2-digit', day:'2-digit' })
-                 + ' ' + now.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    function addHistory(action, auto = false, timer = false, epochSec = 0) {
+      const d    = epochSec > 0 ? new Date(epochSec * 1000) : new Date();
+      const time = d.toLocaleDateString('ja-JP', { month:'2-digit', day:'2-digit' })
+                 + ' ' + d.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
       historyList.querySelector('.no-history')?.remove();
       historyList.insertBefore(makeHistoryEl({ time, action, auto, timer }), historyList.firstChild);
 
@@ -497,10 +497,10 @@
         if (r === 'manual') return;    // 手動操作はtogglePump()で追加済み
 
         if (s === 'ON') {
-          addHistory('ON', true);
+          addHistory('ON', true, false, ts);
           notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
         } else {
-          addHistory('OFF', false, r === 'timer');
+          addHistory('OFF', false, r === 'timer', ts);
           notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
         }
 
@@ -642,10 +642,10 @@
           if (r === 'manual' || (ts > 0 && ts > lastTs2)) {
             if (ts > 0) localStorage.setItem(LAST_TS_KEY, String(ts));
             if (s === 'ON') {
-              addHistory('ON', r === 'schedule');
+              addHistory('ON', r === 'schedule', false, ts);
               if (r !== 'manual') notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
             } else {
-              addHistory('OFF', false, r === 'timer');
+              addHistory('OFF', false, r === 'timer', ts);
               if (r !== 'manual') notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
             }
           }
