@@ -105,17 +105,6 @@
     }
     .add-btn:hover { background:rgba(96,239,255,0.35); }
 
-    /* 通知 */
-    .notif-row { display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.2); border-radius:12px; padding:12px 16px; }
-    .notif-label { font-size:14px; }
-    .notif-sub   { font-size:11px; opacity:0.5; margin-top:2px; }
-    .toggle-switch { position:relative; width:44px; height:24px; }
-    .toggle-switch input { opacity:0; width:0; height:0; }
-    .toggle-slider { position:absolute; inset:0; background:rgba(255,255,255,0.2); border-radius:24px; cursor:pointer; transition:background 0.3s; }
-    .toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:white; border-radius:50%; transition:transform 0.3s; }
-    input:checked + .toggle-slider { background:#4ade80; }
-    input:checked + .toggle-slider::before { transform:translateX(20px); }
-
     /* 履歴 */
     .history-title { font-size:11px; opacity:0.5; margin-bottom:10px; text-transform:uppercase; letter-spacing:1.5px; }
     .history-list  { list-style:none; display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; }
@@ -194,20 +183,6 @@
     </div>
   </div>
 
-  <!-- 通知カード -->
-  <div class="card">
-    <div class="notif-row">
-      <div>
-        <div class="notif-label">🔔 通知</div>
-        <div class="notif-sub" id="notif-sub">ポンプON/OFFを通知</div>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="notif-toggle" onchange="toggleNotif()">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-  </div>
-
   <!-- 履歴カード -->
   <div class="card">
     <p class="history-title">操作履歴</p>
@@ -227,24 +202,9 @@
 
     const HISTORY_KEY   = 'watering_history';
     const SCHEDULE_KEY  = 'watering_schedules';
-    const NOTIF_KEY     = 'watering_notif';
     const TIMER_KEY     = 'watering_active_timer';
     const LAST_TS_KEY   = 'watering_last_status_ts';
     const MAX_HISTORY   = 50;
-
-    // 通知アイコン（水滴絵文字をCanvasで画像化）
-    const NOTIF_ICON = (() => {
-      try {
-        const c = document.createElement('canvas');
-        c.width = c.height = 96;
-        const ctx = c.getContext('2d');
-        ctx.font = '72px serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('💧', 48, 54);
-        return c.toDataURL();
-      } catch(e) { return ''; }
-    })();
 
     let isPumpOn        = false;
     let mqttClient;
@@ -259,8 +219,6 @@
     const btnLabel    = document.getElementById('btn-label');
     const btnTimer    = document.getElementById('btn-timer');
     const historyList = document.getElementById('history-list');
-    const notifToggle = document.getElementById('notif-toggle');
-    const notifSub    = document.getElementById('notif-sub');
 
     /* ── 接続状態 ── */
     function setConnectionStatus(state) {
@@ -346,13 +304,11 @@
           sendCommand('ON');
         }
         addHistory('ON');
-        notify('🚿 水やり開始', 'ポンプが動作を開始しました');
       } else {
         stopCountdownDisplay();
         pendingCmd = 'OFF';
         sendCommand('OFF');
         addHistory('OFF');
-        notify('✅ 水やり停止', 'ポンプが停止しました');
       }
     }
 
@@ -498,10 +454,8 @@
 
         if (s === 'ON') {
           addHistory('ON', true, false, ts);
-          notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
         } else {
           addHistory('OFF', false, r === 'timer', ts);
-          notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
         }
 
         if (ts > newLastTs) newLastTs = ts;
@@ -521,49 +475,6 @@
         return { s: parts[0], r: parts[1], ts: parseInt(parts[2]) || 0 };
       }
       return { s: raw, r: 'manual', ts: 0 };
-    }
-
-    /* ── 通知 ── */
-    function toggleNotif() {
-      const on = notifToggle.checked;
-      if (on && Notification.permission === 'default') {
-        Notification.requestPermission().then(p => {
-          if (p !== 'granted') { notifToggle.checked = false; notifSub.textContent = '通知が許可されていません'; return; }
-          localStorage.setItem(NOTIF_KEY, '1');
-          notifSub.textContent = '通知ON';
-        });
-      } else if (on) {
-        localStorage.setItem(NOTIF_KEY, '1');
-        notifSub.textContent = '通知ON';
-      } else {
-        localStorage.removeItem(NOTIF_KEY);
-        notifSub.textContent = 'ポンプON/OFFを通知';
-      }
-    }
-
-    let swReg = null;
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js')
-        .then(r => { swReg = r; })
-        .catch(e => console.warn('SW:', e));
-    }
-
-    function notify(title, body) {
-      if (!notifToggle.checked || Notification.permission !== 'granted') return;
-      // tagを付けないことで通知が上書きされず全て積み上がる
-      const opts = { body, icon: NOTIF_ICON, badge: NOTIF_ICON };
-      if (swReg) {
-        swReg.showNotification(title, opts);
-      } else {
-        new Notification(title, opts);
-      }
-    }
-
-    function initNotif() {
-      if (localStorage.getItem(NOTIF_KEY) && Notification.permission === 'granted') {
-        notifToggle.checked = true;
-        notifSub.textContent = '通知ON';
-      }
     }
 
     /* ── MQTT接続 ── */
@@ -643,10 +554,8 @@
             if (ts > 0) localStorage.setItem(LAST_TS_KEY, String(ts));
             if (s === 'ON') {
               addHistory('ON', r === 'schedule', false, ts);
-              if (r !== 'manual') notify('🚿 自動水やり開始', 'スケジュールによりポンプが起動しました');
             } else {
               addHistory('OFF', false, r === 'timer', ts);
-              if (r !== 'manual') notify('✅ 水やり停止', r === 'timer' ? 'タイマーにより停止しました' : 'ポンプが停止しました');
             }
           }
         }
@@ -659,7 +568,6 @@
     /* ── 初期化 ── */
     loadHistory();
     renderSchedules();
-    initNotif();
     connect();
   </script>
 </body>
